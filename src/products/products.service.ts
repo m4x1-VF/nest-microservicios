@@ -27,11 +27,16 @@ export class ProductsService {
     const productLimit = limit || 10;
     const actualPage = page || 1;
 
-    const totalPages = await this.prisma.product.count();
+    const totalPages = await this.prisma.product.count({
+      where: { available: true },
+    });
 
     const totalPoducts = await this.prisma.product.findMany({
       skip: (actualPage - 1) * productLimit,
       take: limit,
+      where: {
+        available: true,
+      },
     });
 
     const lastPage = Math.ceil(totalPages / productLimit);
@@ -46,9 +51,10 @@ export class ProductsService {
   }
 
   async findOne(id: number) {
-    const product = await this.prisma.product.findUnique({
+    const product = await this.prisma.product.findFirst({
       where: {
         id,
+        available: true,
       },
     });
 
@@ -66,7 +72,15 @@ export class ProductsService {
     return productToUpdate;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async remove(id: number) {
+    await this.findOne(id);
+    const productToDelete = await this.prisma.product.update({
+      where: { id },
+      data: {
+        available: false,
+      },
+    });
+
+    return productToDelete;
   }
 }
